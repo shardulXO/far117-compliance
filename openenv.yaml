@@ -1,0 +1,6 @@
+name: far117_compliance
+module: src.far117.environment
+tasks:
+  - easy_single_day
+  - medium_3day
+  - hard_30day
