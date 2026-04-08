@@ -22,3 +22,7 @@ far117-server = "server.app:app"
 
 [project.optional-dependencies]
 dev = ["pytest", "black", "ruff"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src.*"]

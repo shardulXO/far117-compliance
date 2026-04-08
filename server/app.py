@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 import os
 import sys
 
@@ -16,7 +16,7 @@ class ResetRequest(BaseModel):
 
 
 class StepRequest(BaseModel):
-    violations: list = []
+    violations: List[dict] = []
     overall_compliant: bool = False
     explanation: str = ""
 
@@ -25,7 +25,7 @@ class StepRequest(BaseModel):
 async def root():
     return {
         "message": "FAR 117 Compliance API",
-        "endpoints": ["/ping", "/info", "/reset", "/step"],
+        "endpoints": ["/ping", "/info", "/reset", "/step", "/state"],
     }
 
 
@@ -95,10 +95,7 @@ async def step(request: StepRequest):
             try:
                 if isinstance(v, dict):
                     violations.append(Violation(**v))
-                elif hasattr(v, "model_dump"):
-                    violations.append(v)
-            except Exception as e:
-                print(f"Warning: Could not parse violation: {v}, error: {e}")
+            except Exception:
                 continue
 
         action = FAR117Action(
@@ -124,7 +121,11 @@ async def step(request: StepRequest):
         return {"error": str(e), "trace": traceback.format_exc()}
 
 
-if __name__ == "__main__":
+def main():
     import uvicorn
 
     uvicorn.run(app, host="0.0.0.0", port=7860)
+
+
+if __name__ == "__main__":
+    main()
