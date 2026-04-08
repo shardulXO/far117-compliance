@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ---
 title: Flightrestcompliancegeturhoursrightpilot
 emoji: 🐨
@@ -10,3 +11,6 @@ short_description: 'FAA FAR 117 flight crew rest compliance checker. '
 ---
 
 Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
+=======
+# far117-compliance
+>>>>>>> 1b3ac746061b634d535a3dc0b3c4f7fbced5ff30

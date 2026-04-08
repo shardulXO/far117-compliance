@@ -21,9 +21,25 @@ class StepRequest(BaseModel):
     explanation: str = ""
 
 
+@app.get("/")
+async def root():
+    return {
+        "message": "FAR 117 Compliance API",
+        "endpoints": ["/ping", "/info", "/reset", "/step"],
+    }
+
+
 @app.get("/ping")
 async def ping():
     return {"status": "ok"}
+
+
+@app.get("/info")
+async def info():
+    return {
+        "name": "far117_compliance",
+        "tasks": ["easy_single_day", "medium_3day", "hard_30day"],
+    }
 
 
 @app.post("/reset")
