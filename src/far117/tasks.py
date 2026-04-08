@@ -1,13 +1,12 @@
 from typing import Any, Dict
-from .models import ScheduleInput
 
 
-def create_easy_single_day() -> ScheduleInput:
-    return ScheduleInput(
-        version="1.0",
-        crew_member={"id": "P001", "role": "captain", "base": "ORD"},
-        schedule_period={"start_date": "2024-03-15", "end_date": "2024-03-15"},
-        duties=[
+def create_easy_single_day() -> Dict[str, Any]:
+    return {
+        "version": "1.0",
+        "crew_member": {"id": "P001", "role": "captain", "base": "ORD"},
+        "schedule_period": {"start_date": "2024-03-15", "end_date": "2024-03-15"},
+        "duties": [
             {
                 "duty_id": "D1",
                 "date": "2024-03-15",
@@ -45,15 +44,15 @@ def create_easy_single_day() -> ScheduleInput:
                 },
             }
         ],
-    )
+    }
 
 
-def create_medium_3day() -> ScheduleInput:
-    return ScheduleInput(
-        version="1.0",
-        crew_member={"id": "P002", "role": "first_officer", "base": "DFW"},
-        schedule_period={"start_date": "2024-03-15", "end_date": "2024-03-17"},
-        duties=[
+def create_medium_3day() -> Dict[str, Any]:
+    return {
+        "version": "1.0",
+        "crew_member": {"id": "P002", "role": "first_officer", "base": "DFW"},
+        "schedule_period": {"start_date": "2024-03-15", "end_date": "2024-03-17"},
+        "duties": [
             {
                 "duty_id": "D1",
                 "date": "2024-03-15",
@@ -120,11 +119,7 @@ def create_medium_3day() -> ScheduleInput:
                 "departure_airport": "BOS",
                 "arrival_airport": "DFW",
                 "flights": [
-                    {
-                        "flight_number": "AA306",
-                        "departure": "15:00",
-                        "arrival": "17:30",
-                    },
+                    {"flight_number": "AA306", "departure": "15:00", "arrival": "17:30"}
                 ],
                 "rest_period": {
                     "start": "23:00",
@@ -133,12 +128,11 @@ def create_medium_3day() -> ScheduleInput:
                 },
             },
         ],
-    )
+    }
 
 
-def create_hard_30day() -> ScheduleInput:
+def create_hard_30day() -> Dict[str, Any]:
     duties = []
-
     for day in range(1, 4):
         duties.append(
             {
@@ -163,7 +157,6 @@ def create_hard_30day() -> ScheduleInput:
                 },
             }
         )
-
     for day in range(4, 16):
         duties.append(
             {
@@ -188,7 +181,6 @@ def create_hard_30day() -> ScheduleInput:
                 },
             }
         )
-
     for day in range(16, 31):
         duties.append(
             {
@@ -213,13 +205,12 @@ def create_hard_30day() -> ScheduleInput:
                 },
             }
         )
-
-    return ScheduleInput(
-        version="1.0",
-        crew_member={"id": "P003", "role": "captain", "base": "DFW"},
-        schedule_period={"start_date": "2024-03-01", "end_date": "2024-03-31"},
-        duties=duties,
-    )
+    return {
+        "version": "1.0",
+        "crew_member": {"id": "P003", "role": "captain", "base": "DFW"},
+        "schedule_period": {"start_date": "2024-03-01", "end_date": "2024-03-31"},
+        "duties": duties,
+    }
 
 
 TASKS = {
@@ -272,83 +263,12 @@ TASKS = {
             {
                 "type": "duty_period_exceeded",
                 "severity": "critical",
-                "date": "2024-03-01",
-                "duty_id": "D1",
-                "details": "FDP 12.0h exceeds max 10.0h",
+                "date": f"2024-03-{d:02d}",
+                "duty_id": f"D{d}",
+                "details": f"FDP 12.0h exceeds max 10.0h",
                 "regulation": "117.5(b)",
-            },
-            {
-                "type": "duty_period_exceeded",
-                "severity": "critical",
-                "date": "2024-03-02",
-                "duty_id": "D2",
-                "details": "FDP 12.0h exceeds max 10.0h",
-                "regulation": "117.5(b)",
-            },
-            {
-                "type": "duty_period_exceeded",
-                "severity": "critical",
-                "date": "2024-03-03",
-                "duty_id": "D3",
-                "details": "FDP 12.0h exceeds max 10.0h",
-                "regulation": "117.5(b)",
-            },
-            {
-                "type": "duty_period_exceeded",
-                "severity": "critical",
-                "date": "2024-03-04",
-                "duty_id": "D4",
-                "details": "FDP 12.0h exceeds max 10.0h",
-                "regulation": "117.5(b)",
-            },
-            {
-                "type": "duty_period_exceeded",
-                "severity": "critical",
-                "date": "2024-03-05",
-                "duty_id": "D5",
-                "details": "FDP 12.0h exceeds max 10.0h",
-                "regulation": "117.5(b)",
-            },
-            {
-                "type": "duty_period_exceeded",
-                "severity": "critical",
-                "date": "2024-03-06",
-                "duty_id": "D6",
-                "details": "FDP 12.0h exceeds max 10.0h",
-                "regulation": "117.5(b)",
-            },
-            {
-                "type": "duty_period_exceeded",
-                "severity": "critical",
-                "date": "2024-03-07",
-                "duty_id": "D7",
-                "details": "FDP 12.0h exceeds max 10.0h",
-                "regulation": "117.5(b)",
-            },
-            {
-                "type": "duty_period_exceeded",
-                "severity": "critical",
-                "date": "2024-03-08",
-                "duty_id": "D8",
-                "details": "FDP 12.0h exceeds max 10.0h",
-                "regulation": "117.5(b)",
-            },
-            {
-                "type": "duty_period_exceeded",
-                "severity": "critical",
-                "date": "2024-03-09",
-                "duty_id": "D9",
-                "details": "FDP 12.0h exceeds max 10.0h",
-                "regulation": "117.5(b)",
-            },
-            {
-                "type": "duty_period_exceeded",
-                "severity": "critical",
-                "date": "2024-03-10",
-                "duty_id": "D10",
-                "details": "FDP 12.0h exceeds max 10.0h",
-                "regulation": "117.5(b)",
-            },
+            }
+            for d in range(1, 11)
         ],
     },
 }
