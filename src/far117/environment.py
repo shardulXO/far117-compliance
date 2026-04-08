@@ -39,7 +39,10 @@ class FAR117Env:
         self._agent_score = None
 
         task_config = tasks.get_task(self.task_id)
-        self._schedule = task_config["schedule"]
+        schedule = task_config["schedule"]
+        self._schedule = (
+            schedule.model_dump() if hasattr(schedule, "model_dump") else schedule
+        )
         self._ground_truth = task_config.get("ground_truth", [])
         self._expected_violations = task_config.get("expected_violations", 0)
 
