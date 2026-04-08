@@ -1,5 +1,18 @@
 name: far117_compliance
 module: src.far117.environment
+tags:
+  - aviation
+  - compliance
+  - safety
+  - regulatory
+description: |
+  FAA FAR 117 Flight Crew Rest Requirement Compliance Checker.
+  Agents audit pilot schedules against federal rest regulations to identify
+  fatigue-related safety violations.
+difficulty:
+  easy: Single pilot, single day, domestic US
+  medium: Full crew, 3-day rotation, multiple timezones
+  hard: Multi-crew, 30-day cumulative, international routes
 tasks:
   - easy_single_day
   - medium_3day
