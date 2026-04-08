@@ -64,25 +64,41 @@ async def reset(request: ResetRequest = ResetRequest()):
 @app.post("/step")
 async def step(request: StepRequest):
     global _current_env
-    from src.far117.models import Violation
+    if _current_env is None:
+        return {"error": "Environment not initialized. Call /reset first."}
 
-    violations = [
-        Violation(**v) if isinstance(v, dict) else v for v in request.violations
-    ]
-    action = FAR117Action(
-        violations=violations,
-        overall_compliant=request.overall_compliant,
-        explanation=request.explanation,
-    )
-    result = await _current_env.step(action)
-    return {
-        "observation": {
-            "schedule": result.observation.schedule.model_dump(),
-            "step": result.observation.step,
-            "done": result.observation.done,
-            "feedback": result.observation.feedback,
-        },
-        "reward": result.reward,
-        "done": result.done,
-        "info": result.info,
-    }
+    try:
+        from src.far117.models import Violation
+
+        violations = []
+        for v in request.violations:
+            try:
+                if isinstance(v, dict):
+                    violations.append(Violation(**v))
+                elif hasattr(v, "model_dump"):
+                    violations.append(v)
+            except Exception as e:
+                print(f"Warning: Could not parse violation: {v}, error: {e}")
+                continue
+
+        action = FAR117Action(
+            violations=violations,
+            overall_compliant=request.overall_compliant,
+            explanation=request.explanation,
+        )
+        result = await _current_env.step(action)
+        return {
+            "observation": {
+                "schedule": result.observation.schedule.model_dump(),
+                "step": result.observation.step,
+                "done": result.observation.done,
+                "feedback": result.observation.feedback,
+            },
+            "reward": result.reward,
+            "done": result.done,
+            "info": result.info,
+        }
+    except Exception as e:
+        import traceback
+
+        return {"error": str(e), "trace": traceback.format_exc()}
