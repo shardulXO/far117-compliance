@@ -2,8 +2,8 @@ import os
 from typing import Any, Dict, Optional, Tuple
 from pydantic import BaseModel, Field
 
-from far117.models import FAR117Observation, FAR117Action, FAR117State
-from far117 import tasks, rules, grader
+from .models import FAR117Observation, FAR117Action, FAR117State
+from . import tasks, rules, grader
 
 
 class StepResult:
