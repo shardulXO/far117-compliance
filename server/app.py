@@ -2,8 +2,15 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Any, Dict, List, Optional
 import os
+import sys
 
-from src.far117 import FAR117Env, FAR117Action
+if os.path.exists("/app"):
+    sys.path.insert(0, "/app")
+elif os.path.exists("src"):
+    sys.path.insert(0, ".")
+
+from far117 import FAR117Env
+from far117.models import FAR117Action
 
 app = FastAPI(title="FAR 117 Compliance API")
 _current_env: Optional[FAR117Env] = None
@@ -42,7 +49,7 @@ async def info():
 
 
 @app.get("/state")
-async def state():
+async def get_state():
     global _current_env
     if _current_env is None:
         raise HTTPException(

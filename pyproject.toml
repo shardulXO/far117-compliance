@@ -8,6 +8,7 @@ version = "1.0.0"
 description = "FAA FAR 117 Flight Crew Rest Compliance Checker"
 readme = "README.md"
 requires-python = ">=3.11"
+license = "MIT"
 dependencies = [
     "openenv-core>=0.2.0",
     "pydantic>=2.0.0",
@@ -22,3 +23,11 @@ server = "server.app:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/far117"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/server",
+    "/openenv.yaml",
+    "/README.md",
+]

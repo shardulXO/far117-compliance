@@ -3,11 +3,15 @@ import sys
 import json
 from typing import List, Optional
 
+if os.path.exists("/app"):
+    sys.path.insert(0, "/app")
+elif os.path.exists("src"):
+    sys.path.insert(0, ".")
+
 from openai import OpenAI
 
-sys.path.insert(0, "/app")
-from src.far117 import FAR117Env
-from src.far117.models import FAR117Action
+from far117 import FAR117Env
+from far117.models import FAR117Action
 
 API_KEY = os.getenv("HF_TOKEN", os.getenv("OPENAI_API_KEY", ""))
 API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
@@ -29,18 +33,18 @@ Output your audit as a JSON object with this exact structure:
   "overall_compliant": true/false,
   "violations": [
     {
-      "type": "insufficient_rest",
+      "type": "duty_period_exceeded",
       "severity": "critical",
       "date": "YYYY-MM-DD",
       "duty_id": "D1",
-      "details": "description of violation",
+      "details": "description",
       "regulation": "FAR 117.X"
     }
   ]
 }
 
 If no violations, set "overall_compliant": true and "violations": [].
-Respond with ONLY JSON, no markdown formatting."""
+Respond with ONLY JSON."""
 
 
 def log_start(task: str, env: str, model: str) -> None:
@@ -81,14 +85,9 @@ def parse_model_response(text: str) -> Optional[FAR117Action]:
             end = text.rfind("```")
             if end > start:
                 text = text[start:end]
-
         text = text.strip()
         data = json.loads(text)
-
-        violations = []
-        for v in data.get("violations", []):
-            violations.append(v)
-
+        violations = data.get("violations", [])
         return FAR117Action(
             violations=violations,
             overall_compliant=data.get("overall_compliant", False),
@@ -137,7 +136,8 @@ def main() -> None:
 
     try:
         observation = env.reset()
-        schedule_json = json.dumps(observation.schedule, indent=2, default=str)
+        schedule_dict = observation.schedule
+        schedule_json = json.dumps(schedule_dict, indent=2, default=str)
 
         for step in range(1, MAX_STEPS + 1):
             action = get_model_action(client, schedule_json)
