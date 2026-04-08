@@ -1,39 +1,30 @@
-import asyncio
 import os
 import sys
 import json
-import textwrap
 from typing import List, Optional
 
-sys.path.insert(0, "/app")
-
 from openai import OpenAI
-from src.far117 import FAR117Env, FAR117Action
-from src.far117.models import Violation
 
-API_KEY = os.getenv("HF_TOKEN")
-if not API_KEY:
-    raise ValueError("HF_TOKEN environment variable is required")
+sys.path.insert(0, "/app")
+from src.far117 import FAR117Env
+from src.far117.models import FAR117Action
 
+API_KEY = os.getenv("HF_TOKEN", os.getenv("OPENAI_API_KEY", ""))
 API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
 MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
-TASK_NAME = os.getenv("FAR117_TASK", "easy_single_day")
-BENCHMARK = os.getenv("FAR117_BENCHMARK", "far117_compliance")
+TASK_NAME = os.getenv("FAR117_TASK", "hard_30day")
+BENCHMARK = "far117_compliance"
 MAX_STEPS = 3
-TEMPERATURE = 0.3
-MAX_TOKENS = 2048
 
-SYSTEM_PROMPT = textwrap.dedent("""
-You are an aviation safety compliance auditor. Your task is to review pilot flight schedules 
-against FAA FAR 117 flight crew rest requirements and identify any violations.
+SYSTEM_PROMPT = """You are an aviation safety compliance auditor. Your task is to review pilot flight schedules against FAA FAR 117 flight crew rest requirements.
 
 FAR 117 Key Rules:
 - Maximum Flight Duty Period (FDP): Up to 13 hours depending on prior rest
 - Minimum Rest Period: 10 hours (can be reduced to 9 hours with limits)
-- Quick Trip Rest: 12 hours when crossing 6+ timezones
+- Hotel Rest: 12 hours minimum when away from base
 - Cumulative Limits: 100 hours/month, 60 hours/7 days
 
-Output your audit as a JSON object with this structure:
+Output your audit as a JSON object with this exact structure:
 {
   "overall_compliant": true/false,
   "violations": [
@@ -42,15 +33,14 @@ Output your audit as a JSON object with this structure:
       "severity": "critical",
       "date": "YYYY-MM-DD",
       "duty_id": "D1",
-      "details": "description",
+      "details": "description of violation",
       "regulation": "FAR 117.X"
     }
-  ],
-  "explanation": "summary of findings"
+  ]
 }
 
 If no violations, set "overall_compliant": true and "violations": [].
-""").strip()
+Respond with ONLY JSON, no markdown formatting."""
 
 
 def log_start(task: str, env: str, model: str) -> None:
@@ -69,32 +59,39 @@ def log_step(
     )
 
 
-def log_end(success: bool, steps: int, rewards: List[float]) -> None:
+def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> None:
     rewards_str = ",".join(f"{r:.2f}" for r in rewards)
     success_val = str(success).lower()
     print(
-        f"[END] success={success_val} steps={steps} rewards={rewards_str}", flush=True
+        f"[END] success={success_val} steps={steps} score={score:.2f} rewards={rewards_str}",
+        flush=True,
     )
 
 
 def parse_model_response(text: str) -> Optional[FAR117Action]:
     try:
         text = text.strip()
-        if text.startswith("```json"):
-            text = text[7:]
-        if text.startswith("```"):
-            text = text[3:]
-        if text.endswith("```"):
-            text = text[:-3]
+        if "```json" in text:
+            start = text.find("```json") + 7
+            end = text.find("```", start)
+            if end > start:
+                text = text[start:end]
+        elif "```" in text:
+            start = text.find("```") + 3
+            end = text.rfind("```")
+            if end > start:
+                text = text[start:end]
+
         text = text.strip()
         data = json.loads(text)
+
         violations = []
         for v in data.get("violations", []):
-            violations.append(Violation(**v))
+            violations.append(v)
+
         return FAR117Action(
             violations=violations,
             overall_compliant=data.get("overall_compliant", False),
-            explanation=data.get("explanation", ""),
         )
     except Exception as e:
         print(f"[DEBUG] Parse error: {e}", flush=True)
@@ -109,54 +106,46 @@ def get_model_action(client: OpenAI, schedule_json: str) -> FAR117Action:
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {
                     "role": "user",
-                    "content": f"Review this schedule for FAR 117 violations:\n\n{schedule_json}\n\nOutput JSON only.",
+                    "content": f"Review this schedule for FAR 117 violations:\n\n{schedule_json}\n\nRespond with ONLY JSON.",
                 },
             ],
-            temperature=TEMPERATURE,
-            max_tokens=MAX_TOKENS,
-            stream=False,
+            temperature=0.0,
+            max_tokens=2048,
         )
         text = (completion.choices[0].message.content or "").strip()
         action = parse_model_response(text)
         if action:
             return action
-        return FAR117Action(
-            violations=[],
-            overall_compliant=False,
-            explanation="Failed to parse model response",
-        )
+        return FAR117Action(violations=[], overall_compliant=False)
     except Exception as exc:
         print(f"[DEBUG] Model request failed: {exc}", flush=True)
-        return FAR117Action(
-            violations=[], overall_compliant=False, explanation=f"API error: {str(exc)}"
-        )
+        return FAR117Action(violations=[], overall_compliant=False)
 
 
-async def main() -> None:
+def main() -> None:
+    if not API_KEY:
+        raise ValueError("HF_TOKEN environment variable is required")
+
     client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
     env = FAR117Env(task_id=TASK_NAME)
     rewards: List[float] = []
     steps_taken = 0
     success = False
+    final_score = 0.0
 
     log_start(task=TASK_NAME, env=BENCHMARK, model=MODEL_NAME)
 
     try:
-        result = await env.reset()
-        schedule_json = result.observation.schedule.model_dump_json(indent=2)
+        observation = env.reset()
+        schedule_json = json.dumps(observation.schedule, indent=2, default=str)
 
         for step in range(1, MAX_STEPS + 1):
-            if result.done:
-                break
-
             action = get_model_action(client, schedule_json)
-            result = await env.step(action)
-
-            reward = result.reward or 0.0
-            done = result.done
+            obs, reward, done, info = env.step(action)
 
             rewards.append(reward)
             steps_taken = step
+            final_score = info.get("score", 0.0)
 
             action_str = json.dumps(
                 {
@@ -165,23 +154,25 @@ async def main() -> None:
                 }
             )
 
-            log_step(step=step, action=action_str, reward=reward, done=done, error=None)
+            log_step(
+                step=step,
+                action=action_str,
+                reward=reward,
+                done=done,
+                error=info.get("error"),
+            )
 
             if done:
                 break
 
-        success = len(rewards) > 0 and any(r > 0 for r in rewards)
+        success = final_score >= 0.7
 
     except Exception as e:
         print(f"[DEBUG] Main error: {e}", flush=True)
         success = False
     finally:
-        try:
-            await env.close()
-        except Exception:
-            pass
-        log_end(success=success, steps=steps_taken, rewards=rewards)
+        log_end(success=success, steps=steps_taken, score=final_score, rewards=rewards)
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

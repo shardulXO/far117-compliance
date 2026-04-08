@@ -1,22 +1,20 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Any, Dict, List, Optional
 import os
-import sys
 
-sys.path.insert(0, "/app")
 from src.far117 import FAR117Env, FAR117Action
 
-app = FastAPI(title="FAR 117 Compliance")
-_current_env = None
+app = FastAPI(title="FAR 117 Compliance API")
+_current_env: Optional[FAR117Env] = None
 
 
 class ResetRequest(BaseModel):
-    task_id: Optional[str] = None
+    task_id: Optional[str] = "hard_30day"
 
 
 class StepRequest(BaseModel):
-    violations: List[dict] = []
+    violations: List[Dict[str, Any]] = []
     overall_compliant: bool = False
     explanation: str = ""
 
@@ -38,6 +36,7 @@ async def ping():
 async def info():
     return {
         "name": "far117_compliance",
+        "version": "1.0.0",
         "tasks": ["easy_single_day", "medium_3day", "hard_30day"],
     }
 
@@ -46,38 +45,27 @@ async def info():
 async def state():
     global _current_env
     if _current_env is None:
-        return {"error": "Environment not initialized. Call /reset first."}
-    try:
-        current_state = await _current_env.state()
-        return {
-            "task_id": current_state.task_id,
-            "ground_truth_violations": [
-                v.model_dump() for v in current_state.ground_truth_violations
-            ],
-            "agent_report": current_state.agent_report.model_dump()
-            if current_state.agent_report
-            else None,
-        }
-    except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(
+            status_code=400, detail="Environment not initialized. Call /reset first."
+        )
+    current_state = _current_env.state()
+    return {
+        "task_id": current_state.task_id,
+        "ground_truth_violations": current_state.ground_truth_violations,
+        "agent_report": current_state.agent_report,
+        "agent_score": current_state.agent_score,
+    }
 
 
 @app.post("/reset")
 async def reset(request: ResetRequest = ResetRequest()):
     global _current_env
-    task_id = request.task_id or os.getenv("FAR117_TASK", "easy_single_day")
+    task_id = request.task_id or os.getenv("FAR117_TASK", "hard_30day")
     _current_env = FAR117Env(task_id=task_id)
-    result = await _current_env.reset()
+    observation = _current_env.reset(task_id=task_id)
     return {
-        "observation": {
-            "schedule": result.observation.schedule.model_dump(),
-            "step": result.observation.step,
-            "done": result.observation.done,
-            "feedback": result.observation.feedback,
-        },
-        "reward": result.reward,
-        "done": result.done,
-        "info": result.info,
+        "observation": observation.model_dump(),
+        "state": _current_env.state().model_dump() if _current_env.state() else None,
     }
 
 
@@ -85,40 +73,25 @@ async def reset(request: ResetRequest = ResetRequest()):
 async def step(request: StepRequest):
     global _current_env
     if _current_env is None:
-        return {"error": "Environment not initialized. Call /reset first."}
-
-    try:
-        from src.far117.models import Violation
-
-        violations = []
-        for v in request.violations:
-            try:
-                if isinstance(v, dict):
-                    violations.append(Violation(**v))
-            except Exception:
-                continue
-
-        action = FAR117Action(
-            violations=violations,
-            overall_compliant=request.overall_compliant,
-            explanation=request.explanation,
+        raise HTTPException(
+            status_code=400, detail="Environment not initialized. Call /reset first."
         )
-        result = await _current_env.step(action)
-        return {
-            "observation": {
-                "schedule": result.observation.schedule.model_dump(),
-                "step": result.observation.step,
-                "done": result.observation.done,
-                "feedback": result.observation.feedback,
-            },
-            "reward": result.reward,
-            "done": result.done,
-            "info": result.info,
-        }
-    except Exception as e:
-        import traceback
 
-        return {"error": str(e), "trace": traceback.format_exc()}
+    action = FAR117Action(
+        violations=request.violations,
+        overall_compliant=request.overall_compliant,
+        explanation=request.explanation,
+    )
+
+    observation, reward, done, info = _current_env.step(action)
+
+    return {
+        "observation": observation.model_dump(),
+        "reward": reward,
+        "done": done,
+        "info": info,
+        "state": _current_env.state().model_dump() if _current_env.state() else None,
+    }
 
 
 def main():

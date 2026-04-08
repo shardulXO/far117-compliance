@@ -1,93 +1,116 @@
 import os
-from typing import Optional
-from dataclasses import dataclass
-from .models import FAR117Observation, FAR117Action, FAR117State
-from . import tasks, rules, grader
+from typing import Any, Dict, Optional, Tuple
+from pydantic import BaseModel, Field
+
+from far117.models import FAR117Observation, FAR117Action, FAR117State
+from far117 import tasks, rules, grader
 
 
-@dataclass
 class StepResult:
-    observation: FAR117Observation
-    reward: float
-    done: bool
-    info: dict
+    def __init__(
+        self,
+        observation: FAR117Observation,
+        reward: float,
+        done: bool,
+        info: Dict[str, Any],
+    ):
+        self.observation = observation
+        self.reward = reward
+        self.done = done
+        self.info = info
 
 
 class FAR117Env:
     def __init__(self, task_id: str = "easy_single_day"):
         self.task_id = task_id
-        self._state = None
+        self._state: Optional[FAR117State] = None
+        self._schedule: Dict[str, Any] = {}
+        self._ground_truth: list = []
+        self._step_count: int = 0
+        self._done: bool = False
+        self._expected_violations: int = 0
+        self._agent_score: Optional[float] = None
+
+    def reset(self, task_id: Optional[str] = None) -> FAR117Observation:
+        if task_id:
+            self.task_id = task_id
         self._step_count = 0
         self._done = False
-        task_config = tasks.get_task(task_id)
-        self._schedule = task_config["schedule"]
-        self._ground_truth = rules.compute_ground_truth(self._schedule)
-        self._expected_violations = task_config["expected_violations"]
-        self._state = FAR117State(
-            task_id=task_id,
-            ground_truth_violations=self._ground_truth,
-            agent_report=None,
-        )
+        self._agent_score = None
 
-    @classmethod
-    async def from_docker_image(cls, image_name: Optional[str] = None) -> "FAR117Env":
-        task_id = os.getenv("FAR117_TASK", "easy_single_day")
-        return cls(task_id=task_id)
-
-    async def reset(self) -> StepResult:
-        self._step_count = 0
-        self._done = False
         task_config = tasks.get_task(self.task_id)
         self._schedule = task_config["schedule"]
-        self._ground_truth = rules.compute_ground_truth(self._schedule)
+        self._ground_truth = task_config.get("ground_truth", [])
+        self._expected_violations = task_config.get("expected_violations", 0)
+
         self._state = FAR117State(
             task_id=self.task_id,
             ground_truth_violations=self._ground_truth,
             agent_report=None,
         )
+
         observation = FAR117Observation(
-            schedule=self._schedule, step=0, done=False, feedback=self._build_feedback()
-        )
-        return StepResult(
-            observation=observation,
-            reward=0.0,
+            schedule=self._schedule,
+            step=0,
             done=False,
-            info={
-                "task_id": self.task_id,
-                "expected_violations": self._expected_violations,
-            },
+            feedback="Please audit the provided pilot schedule for FAR 117 compliance violations.",
+        )
+        return observation
+
+    def step(
+        self, action: FAR117Action
+    ) -> Tuple[FAR117Observation, float, bool, Dict[str, Any]]:
+        if self._done:
+            return (
+                FAR117Observation(
+                    schedule=self._schedule,
+                    step=self._step_count,
+                    done=True,
+                    feedback="Episode already finished",
+                ),
+                0.0,
+                True,
+                {"error": "Episode already done"},
+            )
+
+        self._step_count += 1
+
+        agent_report = {
+            "violations": [
+                v.model_dump() if hasattr(v, "model_dump") else v
+                for v in action.violations
+            ],
+            "overall_compliant": action.overall_compliant,
+        }
+
+        self._state.agent_report = agent_report
+
+        score, reward, feedback = grader.grade_submission(
+            agent_report=agent_report,
+            ground_truth_violations=self._ground_truth,
+            ground_truth_compliant=len(self._ground_truth) == 0,
         )
 
-    async def step(self, action: FAR117Action) -> StepResult:
-        if self._done:
-            raise RuntimeError("Episode already done")
-        self._step_count += 1
-        self._state.agent_report = action
-        reward = grader.compute_reward(action, self._ground_truth, self._step_count)
+        self._agent_score = score
         self._done = True
-        score, grading_details = grader.grade_report(action, self._ground_truth)
+
         observation = FAR117Observation(
             schedule=self._schedule,
             step=self._step_count,
             done=True,
-            feedback=grading_details,
-        )
-        return StepResult(
-            observation=observation,
             reward=reward,
-            done=True,
-            info={"score": score, "grading_details": grading_details},
+            feedback=feedback,
         )
 
-    async def state(self) -> FAR117State:
+        info = {
+            "score": score,
+            "feedback": feedback,
+            "expected_violations": self._expected_violations,
+        }
+
+        return observation, reward, True, info
+
+    def state(self) -> Optional[FAR117State]:
+        if self._state:
+            self._state.agent_score = self._agent_score
         return self._state
-
-    async def close(self):
-        pass
-
-    def _build_feedback(self) -> str:
-        if not self._ground_truth:
-            return "No violations expected."
-        return f"Expected violations ({len(self._ground_truth)} total): " + ", ".join(
-            [f"{v.date}: {v.type}" for v in self._ground_truth]
-        )

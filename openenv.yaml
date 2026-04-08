@@ -1,6 +1,16 @@
 name: far117_compliance
-module: src.far117.environment
+description: FAR 117 Flight Duty Period Compliance Environment
+version: 1.0.0
+authors:
+  - OpenAI Operator
+license: MIT
+tags:
+  - aviation
+  - compliance
+  - safety
+entrypoint: far117.environment:FAR117Env
 tasks:
   - easy_single_day
   - medium_3day
   - hard_30day
+benchmark: far117_compliance
