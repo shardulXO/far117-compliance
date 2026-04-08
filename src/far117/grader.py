@@ -6,11 +6,11 @@ def _violation_key(v: Dict[str, Any]) -> str:
 
 
 def _clamp_score(s: float) -> float:
-    if s <= 0.0:
-        return 0.001
-    if s >= 1.0:
-        return 0.999
-    return s
+    if s <= 0.01:
+        return 0.01
+    if s >= 0.99:
+        return 0.99
+    return round(s, 2)
 
 
 def grade_submission(
@@ -40,17 +40,17 @@ def grade_submission(
 
     if ground_truth_compliant:
         if agent_count == 0:
-            final_score = 0.999
-            step_reward = 0.999
+            final_score = 0.99
+            step_reward = 0.99
             feedback = "Correct: Schedule is compliant and no violations reported."
         else:
             false_positive_penalty = min(0.5, fp_count * 0.15)
-            final_score = max(0.001, 1.0 - false_positive_penalty)
-            step_reward = -false_positive_penalty
+            final_score = max(0.01, round(1.0 - false_positive_penalty, 2))
+            step_reward = round(-false_positive_penalty, 2)
             feedback = f"Incorrect: Schedule is compliant but {fp_count} false positive(s) reported."
     else:
         if tp_count == 0:
-            final_score = 0.001
+            final_score = 0.01
             step_reward = -0.5
             feedback = f"Missed: Schedule has {gt_count} violation(s) but none were correctly identified."
         else:
@@ -64,14 +64,13 @@ def grade_submission(
 
             compliance_bonus = 0.3 if compliance_correct else 0.0
             final_score = (f1 * 0.7) + compliance_bonus
-            final_score = max(0.001, min(0.999, final_score))
+            final_score = max(0.01, min(0.99, round(final_score, 2)))
 
             if fp_count > 0:
                 fp_penalty = min(0.2, fp_count * 0.1)
-                final_score -= fp_penalty
-                final_score = max(0.001, final_score)
+                final_score = max(0.01, round(final_score - fp_penalty, 2))
 
-            step_reward = final_score
+            step_reward = round(final_score, 2)
 
             if tp_count == gt_count and fp_count == 0:
                 feedback = f"Perfect: Correctly identified all {gt_count} violation(s) with no false positives."
@@ -84,8 +83,8 @@ def grade_submission(
             else:
                 feedback = f"Found {fp_count} false positive(s), missed all {fn_count} true violations."
 
-    step_reward = max(-1.0, min(1.0, step_reward))
-    final_score = _clamp_score(final_score)
+    step_reward = round(max(-1.0, min(1.0, step_reward)), 2)
+    final_score = _clamp_score(round(final_score, 2))
 
     return final_score, step_reward, feedback
 
