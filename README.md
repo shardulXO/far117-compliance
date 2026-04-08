@@ -105,3 +105,31 @@ docker run -p 7860:7860 far117
 - ✅ Grader produces 0.0-1.0 score
 - ✅ Dockerfile builds and runs
 - ✅ Deterministic, reproducible grading
+
+## Known Limitations
+
+1. **Simplified Schedule Schema**: The schedule format uses a simplified duty-based model rather than raw leg-by-leg flight data. This trade-off prioritizes clarity over full FAA regulatory complexity.
+
+2. **Single-Episode Completion**: The environment terminates after one step submission. Multi-turn dialogue for clarification is not supported—agents must produce complete compliance reports in a single response.
+
+3. **No Prior Context History**: Agents receive only the current schedule without prior schedule context. In production, FAR 117 requires 7-day lookback for cumulative limits.
+
+4. **Fixed Timezone Handling**: Timezone crossings are simplified to boolean flags rather than detailed UTC conversion for each leg. Complex international routing may not be fully represented.
+
+5. **No Partial Credit for Near-Misses**: The grader does not award partial credit for violations detected with wrong severity or regulation citations—only exact type matches count.
+
+6. **No Uncertainty Quantification**: The model must commit to a binary compliance decision. Probabilistic or "likely compliant" responses are not supported.
+
+7. **Hardcoded Ground Truth**: Violations are pre-computed in task definitions. The environment does not dynamically compute violations from the schedule using the rules engine.
+
+## Design Tradeoffs
+
+| Tradeoff | Decision | Rationale |
+|----------|----------|----------|
+| Dict vs Pydantic for schedule | Dict-based schedules | Better JSON serialization for API responses; avoids nested model complexity |
+| Single-step episode | One submission per schedule | Simplifies evaluation; aligns with benchmark scoring methodology |
+| F1-based scoring | Precision + recall weighting | Balances false positives (reporting violations that don't exist) against false negatives (missing real violations) |
+| Static ground truth | Pre-computed violations | Determinism is critical for reproducible benchmarking; dynamic computation would introduce non-determinism |
+| Simplified FAR rules | Duty-hour focus | Full FAR 117 has 50+ pages of regulations; core fatigue-related limits are prioritized |
+| Explicit regulation citations | Agent must cite FAR section | Enforces domain knowledge; plain English descriptions alone would be insufficient |
+| No multi-agent support | Single agent per schedule | Aligned with single-pilot certification scope; multi-crew is modeled as separate pilots |
