@@ -42,6 +42,26 @@ async def info():
     }
 
 
+@app.get("/state")
+async def state():
+    global _current_env
+    if _current_env is None:
+        return {"error": "Environment not initialized. Call /reset first."}
+    try:
+        current_state = await _current_env.state()
+        return {
+            "task_id": current_state.task_id,
+            "ground_truth_violations": [
+                v.model_dump() for v in current_state.ground_truth_violations
+            ],
+            "agent_report": current_state.agent_report.model_dump()
+            if current_state.agent_report
+            else None,
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
 @app.post("/reset")
 async def reset(request: ResetRequest = ResetRequest()):
     global _current_env
