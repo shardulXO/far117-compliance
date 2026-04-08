@@ -6,10 +6,10 @@ import sys
 
 if os.path.exists("/app"):
     sys.path.insert(0, "/app")
-elif os.path.exists("src"):
+else:
     sys.path.insert(0, ".")
 
-from far117 import FAR117Env
+from far117.environment import FAR117Env
 from far117.models import FAR117Action
 
 app = FastAPI(title="FAR 117 Compliance API")

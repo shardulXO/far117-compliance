@@ -5,12 +5,12 @@ from typing import List, Optional
 
 if os.path.exists("/app"):
     sys.path.insert(0, "/app")
-elif os.path.exists("src"):
+else:
     sys.path.insert(0, ".")
 
 from openai import OpenAI
 
-from far117 import FAR117Env
+from far117.environment import FAR117Env
 from far117.models import FAR117Action
 
 API_KEY = os.getenv("HF_TOKEN", os.getenv("OPENAI_API_KEY", ""))
@@ -38,13 +38,13 @@ Output your audit as a JSON object with this exact structure:
       "date": "YYYY-MM-DD",
       "duty_id": "D1",
       "details": "description",
-      "regulation": "FAR 117.X"
+      "regulation": "FAR 117.5(b)"
     }
   ]
 }
 
 If no violations, set "overall_compliant": true and "violations": [].
-Respond with ONLY JSON."""
+Respond with ONLY JSON, no markdown formatting."""
 
 
 def log_start(task: str, env: str, model: str) -> None:
@@ -88,12 +88,13 @@ def parse_model_response(text: str) -> Optional[FAR117Action]:
         text = text.strip()
         data = json.loads(text)
         violations = data.get("violations", [])
+        if not isinstance(violations, list):
+            violations = []
         return FAR117Action(
             violations=violations,
             overall_compliant=data.get("overall_compliant", False),
         )
-    except Exception as e:
-        print(f"[DEBUG] Parse error: {e}", flush=True)
+    except Exception:
         return None
 
 
@@ -116,8 +117,7 @@ def get_model_action(client: OpenAI, schedule_json: str) -> FAR117Action:
         if action:
             return action
         return FAR117Action(violations=[], overall_compliant=False)
-    except Exception as exc:
-        print(f"[DEBUG] Model request failed: {exc}", flush=True)
+    except Exception:
         return FAR117Action(violations=[], overall_compliant=False)
 
 
