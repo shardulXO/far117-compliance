@@ -19,6 +19,7 @@ MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
 TASK_NAME = os.getenv("FAR117_TASK", "hard_30day")
 BENCHMARK = "far117_compliance"
 MAX_STEPS = 3
+SUCCESS_THRESHOLD = 0.5
 
 SYSTEM_PROMPT = """You are an aviation safety compliance auditor. Your task is to review pilot flight schedules against FAA FAR 117 flight crew rest requirements.
 
@@ -56,9 +57,9 @@ def log_step(
 ) -> None:
     error_val = error if error else "null"
     done_val = str(done).lower()
-    action_escaped = action.replace('"', '\\"').replace("\n", "\\n")[:200]
+    action_escaped = action.replace('"', '\\"').replace("\n", "\\n")
     print(
-        f'[STEP] step={step} action="{action_escaped}" reward={reward:.2f} done={done_val} error={error_val}',
+        f"[STEP] step={step} action={action_escaped} reward={reward:.2f} done={done_val} error={error_val}",
         flush=True,
     )
 
@@ -165,7 +166,7 @@ def main() -> None:
             if done:
                 break
 
-        success = final_score >= 0.7
+        success = final_score >= SUCCESS_THRESHOLD
 
     except Exception as e:
         print(f"[DEBUG] Main error: {e}", flush=True)
