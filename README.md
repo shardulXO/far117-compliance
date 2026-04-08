@@ -1,11 +1,12 @@
 ---
-title: Flightrestcompliancegeturhoursrightpilot
+title: FAR 117 Compliance
 emoji: ✈️
 colorFrom: blue
 colorTo: purple
 sdk: docker
+app_port: 7860
 pinned: false
-license: apache-2.0
+license: mit
 short_description: FAA FAR 117 flight crew rest compliance checker.
 ---
 
