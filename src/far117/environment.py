@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, List
 from pydantic import BaseModel, Field
 
 from .models import FAR117Observation, FAR117Action, FAR117State
@@ -25,7 +25,7 @@ class FAR117Env:
         self.task_id = task_id
         self._state: Optional[FAR117State] = None
         self._schedule: Dict[str, Any] = {}
-        self._ground_truth: list = []
+        self._ground_truth: List[Dict[str, Any]] = []
         self._step_count: int = 0
         self._done: bool = False
         self._expected_violations: int = 0
@@ -40,9 +40,7 @@ class FAR117Env:
 
         task_config = tasks.get_task(self.task_id)
         schedule = task_config["schedule"]
-        self._schedule = (
-            schedule.model_dump() if hasattr(schedule, "model_dump") else schedule
-        )
+        self._schedule = schedule
         self._ground_truth = task_config.get("ground_truth", [])
         self._expected_violations = task_config.get("expected_violations", 0)
 
@@ -56,6 +54,7 @@ class FAR117Env:
             schedule=self._schedule,
             step=0,
             done=False,
+            reward=0.0,
             feedback="Please audit the provided pilot schedule for FAR 117 compliance violations.",
         )
         return observation
@@ -69,6 +68,7 @@ class FAR117Env:
                     schedule=self._schedule,
                     step=self._step_count,
                     done=True,
+                    reward=0.0,
                     feedback="Episode already finished",
                 ),
                 0.0,
@@ -79,10 +79,7 @@ class FAR117Env:
         self._step_count += 1
 
         agent_report = {
-            "violations": [
-                v.model_dump() if hasattr(v, "model_dump") else v
-                for v in action.violations
-            ],
+            "violations": action.violations,
             "overall_compliant": action.overall_compliant,
         }
 
@@ -117,3 +114,10 @@ class FAR117Env:
         if self._state:
             self._state.agent_score = self._agent_score
         return self._state
+
+    def grader(self, agent_report: Dict[str, Any]) -> Tuple[float, float, str]:
+        return grader.grade_submission(
+            agent_report=agent_report,
+            ground_truth_violations=self._ground_truth,
+            ground_truth_compliant=len(self._ground_truth) == 0,
+        )
