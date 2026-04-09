@@ -107,3 +107,16 @@ def grade_report(
         agent_report, ground_truth, len(ground_truth) == 0
     )
     return score, feedback
+
+
+def grade(
+    task_id: str,
+    agent_report: Dict[str, Any],
+    ground_truth_violations: List[Dict[str, Any]],
+) -> Tuple[float, str]:
+    """OpenEnv grader interface - grades a single task submission."""
+    ground_truth_compliant = len(ground_truth_violations) == 0
+    score, _, feedback = grade_submission(
+        agent_report, ground_truth_violations, ground_truth_compliant
+    )
+    return score, feedback

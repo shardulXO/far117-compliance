@@ -9,6 +9,7 @@ tags:
   - compliance
   - safety
 entrypoint: far117.environment:FAR117Env
+grader: far117.grader:grade
 tasks:
   - easy_single_day
   - medium_3day
