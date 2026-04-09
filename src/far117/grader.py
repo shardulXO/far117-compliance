@@ -120,3 +120,33 @@ def grade(
         agent_report, ground_truth_violations, ground_truth_compliant
     )
     return score, feedback
+
+
+def grade_easy(
+    agent_report: Dict[str, Any], ground_truth_violations: List[Dict[str, Any]]
+) -> Tuple[float, str]:
+    """Grader for easy_single_day task."""
+    ground_truth_compliant = len(ground_truth_violations) == 0
+    return grade_submission(
+        agent_report, ground_truth_violations, ground_truth_compliant
+    )
+
+
+def grade_medium(
+    agent_report: Dict[str, Any], ground_truth_violations: List[Dict[str, Any]]
+) -> Tuple[float, str]:
+    """Grader for medium_3day task."""
+    ground_truth_compliant = len(ground_truth_violations) == 0
+    return grade_submission(
+        agent_report, ground_truth_violations, ground_truth_compliant
+    )
+
+
+def grade_hard(
+    agent_report: Dict[str, Any], ground_truth_violations: List[Dict[str, Any]]
+) -> Tuple[float, str]:
+    """Grader for hard_30day task."""
+    ground_truth_compliant = len(ground_truth_violations) == 0
+    return grade_submission(
+        agent_report, ground_truth_violations, ground_truth_compliant
+    )
