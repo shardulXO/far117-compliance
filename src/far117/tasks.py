@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 
 def create_easy_single_day() -> Dict[str, Any]:
@@ -283,3 +283,13 @@ def get_task(task_name: str) -> Dict[str, Any]:
     if task_name not in TASKS:
         raise ValueError(f"Unknown task: {task_name}")
     return TASKS[task_name]
+
+
+def list_tasks() -> List[str]:
+    """Return list of all task IDs."""
+    return list(TASKS.keys())
+
+
+def get_tasks_with_graders() -> Dict[str, Dict[str, Any]]:
+    """Return all tasks that have graders configured."""
+    return {k: v for k, v in TASKS.items() if "grader" in v}

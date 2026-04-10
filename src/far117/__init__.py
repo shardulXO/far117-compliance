@@ -11,4 +11,7 @@ __all__ = [
     "tasks",
     "rules",
     "grader",
+    "get_task",
+    "list_tasks",
+    "get_tasks_with_graders",
 ]
