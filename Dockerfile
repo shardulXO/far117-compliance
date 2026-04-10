@@ -10,6 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY src /app/src
 COPY server /app/server
 COPY grader.py /app/grader.py
+COPY graders.py /app/graders.py
 COPY openenv.yaml /app/openenv.yaml
 COPY pyproject.toml /app/pyproject.toml
 COPY README.md /app/README.md
