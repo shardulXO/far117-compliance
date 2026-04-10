@@ -213,8 +213,6 @@ def create_hard_30day() -> Dict[str, Any]:
     }
 
 
-GRADER_CONFIG = {"type": "python", "entry_point": "far117.grader:grade"}
-
 TASKS = {
     "easy_single_day": {
         "schedule": create_easy_single_day(),
@@ -231,7 +229,7 @@ TASKS = {
                 "regulation": "117.5(b)",
             }
         ],
-        "grader": GRADER_CONFIG,
+        "grader": {"type": "python", "entry_point": "grader:grade_easy"},
     },
     "medium_3day": {
         "schedule": create_medium_3day(),
@@ -256,7 +254,7 @@ TASKS = {
                 "regulation": "117.5(b)",
             },
         ],
-        "grader": GRADER_CONFIG,
+        "grader": {"type": "python", "entry_point": "grader:grade_medium"},
     },
     "hard_30day": {
         "schedule": create_hard_30day(),
@@ -274,7 +272,7 @@ TASKS = {
             }
             for d in range(1, 11)
         ],
-        "grader": GRADER_CONFIG,
+        "grader": {"type": "python", "entry_point": "grader:grade_hard"},
     },
 }
 

@@ -100,3 +100,27 @@ def grade(
         agent_report, ground_truth_violations, ground_truth_compliant
     )
     return score, feedback
+
+
+def grade_easy(
+    task_id: str,
+    agent_report: Dict[str, Any],
+    ground_truth_violations: List[Dict[str, Any]],
+) -> Tuple[float, str]:
+    return grade(task_id, agent_report, ground_truth_violations)
+
+
+def grade_medium(
+    task_id: str,
+    agent_report: Dict[str, Any],
+    ground_truth_violations: List[Dict[str, Any]],
+) -> Tuple[float, str]:
+    return grade(task_id, agent_report, ground_truth_violations)
+
+
+def grade_hard(
+    task_id: str,
+    agent_report: Dict[str, Any],
+    ground_truth_violations: List[Dict[str, Any]],
+) -> Tuple[float, str]:
+    return grade(task_id, agent_report, ground_truth_violations)
