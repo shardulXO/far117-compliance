@@ -12,6 +12,7 @@ COPY server /app/server
 COPY grader.py /app/grader.py
 COPY graders.py /app/graders.py
 COPY openenv.yaml /app/openenv.yaml
+COPY tasks.yaml /app/tasks.yaml
 COPY pyproject.toml /app/pyproject.toml
 COPY README.md /app/README.md
 COPY inference.py /app/inference.py

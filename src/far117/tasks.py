@@ -291,3 +291,15 @@ def list_tasks() -> List[str]:
 def get_tasks_with_graders() -> Dict[str, Dict[str, Any]]:
     """Return all tasks that have graders configured."""
     return {k: v for k, v in TASKS.items() if "grader" in v}
+
+
+GRADERS = {
+    "easy_single_day": "grader:grade_easy",
+    "medium_3day": "grader:grade_medium",
+    "hard_30day": "grader:grade_hard",
+}
+
+
+def get_grader(task_id: str) -> str:
+    """Get grader entry point for a task."""
+    return GRADERS.get(task_id, "grader:grade")
