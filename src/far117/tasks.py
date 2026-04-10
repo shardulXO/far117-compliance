@@ -213,7 +213,7 @@ def create_hard_30day() -> Dict[str, Any]:
     }
 
 
-GRADER_CONFIG = {"type": "python", "entry_point": "grader:grade"}
+GRADER_CONFIG = {"type": "python", "entry_point": "far117.grader:grade"}
 
 TASKS = {
     "easy_single_day": {
