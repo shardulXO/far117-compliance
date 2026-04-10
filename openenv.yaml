@@ -9,15 +9,14 @@ tags:
   - compliance
   - safety
 entrypoint: far117.environment:FAR117Env
-grader: grader:grade
 tasks:
-  easy_single_day:
+  - task_id: easy_single_day
     description: Single pilot, single day
     grader: grader:grade_easy
-  medium_3day:
+  - task_id: medium_3day
     description: 3-day rotation with violations
     grader: grader:grade_medium
-  hard_30day:
+  - task_id: hard_30day
     description: 30-day cumulative with violations
     grader: grader:grade_hard
 benchmark: far117_compliance
