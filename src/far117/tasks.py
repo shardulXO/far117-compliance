@@ -269,7 +269,7 @@ TASKS = {
                 "severity": "critical",
                 "date": f"2024-03-{d:02d}",
                 "duty_id": f"D{d}",
-                "details": f"FDP 12.0h exceeds max 10.0h",
+                "details": "FDP 12.0h exceeds max 10.0h",
                 "regulation": "117.5(b)",
             }
             for d in range(1, 11)
